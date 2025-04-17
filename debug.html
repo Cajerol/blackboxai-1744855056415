@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug localStorage</title>
+    <style>
+        pre { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+        button { margin: 10px 0; padding: 5px 10px; }
+        .log { font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Debug localStorage</h1>
+    
+    <div>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <button onclick="resetInventory()">Reset Inventory</button>
+    </div>
+
+    <h2>Debug Logs:</h2>
+    <pre id="debug-log" class="log"></pre>
+
+    <h2>Current Inventory:</h2>
+    <pre id="inventory-output"></pre>
+    
+    <h2>Test Barcode Lookup:</h2>
+    <input type="text" id="test-barcode" value="7501234567890">
+    <button onclick="testLookup()">Test Lookup</button>
+    <pre id="lookup-output"></pre>
+
+    <script>
+        let debugLog = [];
+
+        function log(message) {
+            const timestamp = new Date().toISOString();
+            const logMessage = `${timestamp}: ${message}`;
+            debugLog.push(logMessage);
+            updateLogDisplay();
+            localStorage.setItem('debug_log', JSON.stringify(debugLog));
+        }
+
+        function updateLogDisplay() {
+            document.getElementById('debug-log').textContent = 
+                debugLog.join('\n');
+        }
+
+        function clearLogs() {
+            debugLog = [];
+            localStorage.removeItem('debug_log');
+            updateLogDisplay();
+        }
+
+        function displayInventory() {
+            const inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
+            document.getElementById('inventory-output').textContent = 
+                JSON.stringify(inventory, null, 2);
+            log('Displayed current inventory: ' + JSON.stringify(inventory));
+        }
+
+        function resetInventory() {
+            // Clear localStorage
+            localStorage.clear();
+            log('Cleared localStorage');
+            
+            // Add test product
+            const inventory = [{
+                barcode: '7501234567890',
+                name: 'Corona Extra 355ml',
+                quantity: 100,
+                price: 5.50
+            }];
+            
+            // Save to localStorage
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            log('Reset inventory with test product: ' + JSON.stringify(inventory));
+            
+            // Update display
+            displayInventory();
+        }
+
+        function testLookup() {
+            const barcode = document.getElementById('test-barcode').value;
+            const inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
+            
+            log('Testing barcode lookup: ' + barcode);
+            log('Current inventory: ' + JSON.stringify(inventory));
+            
+            const product = inventory.find(item => {
+                const matches = item.barcode === barcode;
+                log(`Comparing: ${item.barcode} === ${barcode} (${matches})`);
+                return matches;
+            });
+            
+            const result = product ? 
+                `Found: ${JSON.stringify(product, null, 2)}` : 
+                'Product not found';
+            
+            document.getElementById('lookup-output').textContent = result;
+            log('Lookup result: ' + result);
+        }
+
+        // Load previous logs
+        debugLog = JSON.parse(localStorage.getItem('debug_log') || '[]');
+        updateLogDisplay();
+
+        // Initialize display
+        displayInventory();
+        log('Page loaded');
+    </script>
+</body>
+</html>
